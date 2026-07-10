@@ -357,6 +357,59 @@
   .notice-list.questions li { border-left-color: var(--copper); background: rgba(194, 99, 21, 0.04); }
 
   /* ===== 3D Canvas ===== */
+  .preview-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .viewmode-toggle { display: flex; border: 2px solid var(--ink); border-radius: var(--radius); overflow: hidden; }
+  .viewmode-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    padding: 8px 16px;
+    border: none;
+    background: var(--white);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .viewmode-btn + .viewmode-btn { border-left: 2px solid var(--ink); }
+  .viewmode-btn.active { background: var(--ink); color: var(--white); }
+  .viewmode-btn:hover:not(.active) { background: var(--paper); }
+  .preview-export-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .part-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(9, 16, 22, 0.94);
+    color: #E8EEF3;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,0.15);
+    white-space: nowrap;
+    z-index: 5;
+    display: none;
+  }
+  .part-tooltip .tt-name { font-weight: 700; display: block; margin-bottom: 2px; }
+  .part-tooltip .tt-dims { color: #9FB4C4; }
+  .legend-chip .chip-dl {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    border: 1px solid var(--ink-faint);
+    background: var(--paper);
+    padding: 1px 6px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-left: 4px;
+  }
+  .legend-chip .chip-dl:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
   #canvas-wrap {
     width: 100%; height: 460px;
     border: 2px solid var(--ink);
@@ -412,6 +465,34 @@
     text-align: center; padding: 60px 20px; color: var(--ink-faint); font-family: var(--mono); font-size: 0.9rem;
     border: 2px dashed var(--ink-faint); border-radius: var(--radius); background: rgba(250,252,254,0.5);
   }
+
+  /* ===== Diagrams tab ===== */
+  .diagram-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .diagram-card { border: 1px solid var(--ink-faint); border-radius: var(--radius); padding: 16px; background: #FAFCFD; }
+  .diagram-card h4 { font-family: var(--mono); font-size: 0.82rem; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .diagram-card svg { width: 100%; height: auto; display: block; }
+  .diagram-empty { color: var(--ink-faint); font-family: var(--mono); font-size: 0.85rem; padding: 20px 0; }
+
+  /* ===== Code tab ===== */
+  .code-block-wrap { position: relative; margin-bottom: 20px; }
+  .code-block-head {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink); color: var(--white);
+    font-family: var(--mono); font-size: 0.75rem;
+    padding: 8px 14px; border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .code-block-head .copy-btn {
+    font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase;
+    background: transparent; color: #C9D6E0; border: 1px solid #3d4f5e;
+    padding: 3px 10px; border-radius: var(--radius); cursor: pointer;
+  }
+  .code-block-head .copy-btn:hover { background: #223140; color: var(--white); }
+  pre.code-block {
+    margin: 0; padding: 16px; background: #0D1520; color: #DCE6EE;
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.55;
+    overflow-x: auto; border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .code-explanation { color: var(--ink-soft); font-size: 0.92rem; margin-bottom: 16px; }
 
   @media (prefers-reduced-motion: reduce) {
     .spinner { animation: none; }
@@ -495,6 +576,19 @@
         </div>
       </details>
 
+      <details class="keybox" id="orkeybox">
+        <summary>▸ OpenRouter API key (optional fallback if Gemini fails or is rate-limited)</summary>
+        <div class="keybody">
+          <p>If Gemini errors out (rate limit, overload, etc.) and a key is set here, the site automatically retries the same request through
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> instead of just failing. Also stored only in your browser.
+          Leave the model field blank to use OpenRouter's auto-router, which picks a capable model for you.</p>
+          <label for="openrouterkey">OpenRouter API key</label>
+          <input type="password" id="openrouterkey" placeholder="sk-or-v1-...">
+          <label for="openroutermodel">Model (optional)</label>
+          <input type="text" id="openroutermodel" placeholder="e.g. openai/gpt-4o-mini — blank uses openrouter/auto">
+        </div>
+      </details>
+
       <div class="actions">
         <button class="btn" id="generateBtn">Generate spec</button>
         <span class="status" id="genStatus"></span>
@@ -517,6 +611,8 @@
         <div class="tab" data-tab="materials">Materials</div>
         <div class="tab" data-tab="procedure">Procedure</div>
         <div class="tab" data-tab="preview">3D layout</div>
+        <div class="tab" data-tab="diagrams">Diagrams</div>
+        <div class="tab" data-tab="code">Code</div>
         <div class="tab" data-tab="notes">Safety &amp; notes</div>
       </div>
 
@@ -525,10 +621,22 @@
       <div class="tabpanel" id="panel-materials"></div>
       <div class="tabpanel" id="panel-procedure"></div>
       <div class="tabpanel" id="panel-preview">
+        <div class="preview-toolbar">
+          <div class="viewmode-toggle" id="viewModeToggle">
+            <button type="button" class="viewmode-btn active" data-mode="assembled">Assembled</button>
+            <button type="button" class="viewmode-btn" data-mode="exploded">Exploded</button>
+          </div>
+          <div class="preview-export-actions">
+            <button type="button" class="btn-sm" id="downloadAssemblyBtn">Download assembly (.stl)</button>
+            <button type="button" class="btn-sm" id="downloadAllZipBtn">Download all parts (.zip)</button>
+          </div>
+        </div>
         <div id="canvas-wrap"></div>
         <div id="part-legend"></div>
-        <div id="part-hint">Drag to orbit, scroll to zoom. This is a rough parametric layout from the AI's stated dimensions — not a precision CAD model.</div>
+        <div id="part-hint">Drag to orbit, scroll to zoom, hover a part for its dimensions. This is a rough parametric layout the AI inferred from stated dimensions and assembly guesses — not a precision CAD model. STL downloads are simple box/cylinder/sphere placeholders sized to match, useful for a scale check or a stand-in print, not an engineered part file.</div>
       </div>
+      <div class="tabpanel" id="panel-diagrams"></div>
+      <div class="tabpanel" id="panel-code"></div>
       <div class="tabpanel" id="panel-notes"></div>
 
       <div class="actions">
@@ -565,6 +673,7 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ============================================================
 // ACCOUNT STATE MANAGEMENT ENGINE
@@ -606,11 +715,15 @@ function renderAccountGrid() {
     grid.appendChild(tab);
   });
   els.apikey.value = profiles[activeProfileId].key || '';
+  els.openrouterkey.value = profiles[activeProfileId].openrouterKey || '';
+  els.openroutermodel.value = profiles[activeProfileId].openrouterModel || '';
 }
 
 function switchProfile(id) {
   if (!profiles[id]) return;
   profiles[activeProfileId].key = els.apikey.value.trim();
+  profiles[activeProfileId].openrouterKey = els.openrouterkey.value.trim();
+  profiles[activeProfileId].openrouterModel = els.openroutermodel.value.trim();
   saveProfiles();
   activeProfileId = id;
   localStorage.setItem(ACTIVE_PROFILE_KEY, activeProfileId);
@@ -619,9 +732,11 @@ function switchProfile(id) {
 
 document.getElementById('addAccountBtn').addEventListener('click', () => {
   profiles[activeProfileId].key = els.apikey.value.trim();
+  profiles[activeProfileId].openrouterKey = els.openrouterkey.value.trim();
+  profiles[activeProfileId].openrouterModel = els.openroutermodel.value.trim();
   const id = 'prof_' + Date.now();
   const index = Object.keys(profiles).length + 1;
-  profiles[id] = { name: `Profile ${String.fromCharCode(64 + index) || index}`, key: '' };
+  profiles[id] = { name: `Profile ${String.fromCharCode(64 + index) || index}`, key: '', openrouterKey: '', openrouterModel: '' };
   activeProfileId = id;
   saveProfiles();
   renderAccountGrid();
@@ -638,6 +753,7 @@ document.getElementById('deleteAccountBtn').addEventListener('click', () => {
   saveProfiles();
   renderAccountGrid();
 });
+
 
 // ============================================================
 // STATE
@@ -656,6 +772,8 @@ const els = {
   skill: document.getElementById('skill'),
   budget: document.getElementById('budget'),
   apikey: document.getElementById('apikey'),
+  openrouterkey: document.getElementById('openrouterkey'),
+  openroutermodel: document.getElementById('openroutermodel'),
   generateBtn: document.getElementById('generateBtn'),
   genStatus: document.getElementById('genStatus'),
   outputSheet: document.getElementById('outputSheet'),
@@ -699,23 +817,38 @@ Schema:
       "notes": string,
       "shape": "box" | "cylinder" | "sphere",
       "dimensions_mm": { "w": number, "h": number, "d": number, "radius": number },
-      "color_hex": string (a plausible color for this part, e.g. "#8899aa")
+      "color_hex": string (a plausible color for this part, e.g. "#8899aa"),
+      "position_mm": { "x": number, "y": number, "z": number },
+      "rotation_deg": { "x": number, "y": number, "z": number },
+      "pins": [ { "label": string, "color_hex": string, "notes": string } ]
     }
   ],
   "equipment": [ { "name": string, "purpose": string } ],
   "materials": [ { "name": string, "qty": string, "notes": string } ],
   "procedure": [ { "step_number": number, "title": string, "description": string, "est_time": string } ],
   "safety_notes": [ string ],
-  "open_questions": [ string ]
+  "open_questions": [ string ],
+  "code": {
+    "relevant": boolean,
+    "language": string,
+    "filename": string,
+    "content": string,
+    "explanation": string
+  }
 }
 
 Rules:
 - Only include a "have" status for items the user explicitly said they already have; everything else is "need".
 - Give every part sensible real-world dimensions in millimeters so a rough 3D layout can be drawn from them (box parts use w/h/d, cylinder/sphere use radius and h where relevant).
+- position_mm and rotation_deg place the part in the FINISHED, ASSEMBLED product, all sharing one coordinate system: origin (0,0,0) is the center of the assembly's base/footprint, +y is straight up, +x and +z span the footprint. Every part's position should reflect roughly where it actually sits relative to every other part once assembled (e.g. a base panel near y=0, a component mounted on top of it at a higher y, two side rails offset in x on either side of a center part at z=0). Think through the physical arrangement before assigning numbers so parts don't collide and the assembly reads as one coherent object.
+- rotation_deg should be non-zero whenever a part is naturally oriented sideways or at an angle in the assembly (e.g. a horizontal shaft rotated 90 degrees on z).
+- pins: ONLY include this array for parts that have multiple distinct, named connection points a builder needs to tell apart — e.g. an RGB LED (Red anode, Green anode, Blue anode, Common cathode/ground), a sensor breakout (VCC, GND, SDA, SCL), a motor (Terminal A, Terminal B), a connector or header. Order pins the way they physically appear on the part (e.g. left to right). Omit "pins" entirely (or leave it an empty array) for simple parts like a single screw, a plain board, or plywood — don't invent pins that don't exist.
+- code: only set "relevant": true and fill this in when the project involves a microcontroller, single-board computer, or anything programmable (Arduino, ESP32, Raspberry Pi, etc). Provide one complete, runnable starter file (not a fragment) covering the core behavior described, with brief inline comments. If the project has no programmable component, set "relevant": false and leave the other code fields empty strings.
 - Tailor tool/equipment complexity to the stated skill level.
 - Keep procedure steps concrete and ordered; include realistic time estimates.
 - Always include safety_notes relevant to the tools/materials involved.
 - Respond with ONLY the JSON object, nothing else.`;
+
 
 function buildInitialPrompt(){
   const parts = [];
@@ -732,16 +865,129 @@ function buildInitialPrompt(){
 // ============================================================
 // API CALL
 // ============================================================
-async function callGemini(userMessage){
-  const apiKey = els.apikey.value.trim();
-  if (!apiKey){
-    throw new Error('Add your Gemini API key in the box above first.');
+const SPEC_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    project_title: { type: "string" },
+    summary: { type: "string" },
+    assumptions: { type: "string" },
+    parts: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          qty: { type: "number" },
+          status: { type: "string", enum: ["have", "need"] },
+          notes: { type: "string" },
+          shape: { type: "string", enum: ["box", "cylinder", "sphere"] },
+          dimensions_mm: {
+            type: "object",
+            properties: {
+              w: { type: "number" }, h: { type: "number" },
+              d: { type: "number" }, radius: { type: "number" }
+            }
+          },
+          color_hex: { type: "string" },
+          position_mm: {
+            type: "object",
+            properties: { x: { type: "number" }, y: { type: "number" }, z: { type: "number" } },
+            required: ["x", "y", "z"]
+          },
+          rotation_deg: {
+            type: "object",
+            properties: { x: { type: "number" }, y: { type: "number" }, z: { type: "number" } },
+            required: ["x", "y", "z"]
+          },
+          pins: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                label: { type: "string" },
+                color_hex: { type: "string" },
+                notes: { type: "string" }
+              }
+            }
+          }
+        },
+        required: ["name", "qty", "status", "shape", "dimensions_mm", "position_mm", "rotation_deg"]
+      }
+    },
+    equipment: {
+      type: "array",
+      items: { type: "object", properties: { name: { type: "string" }, purpose: { type: "string" } } }
+    },
+    materials: {
+      type: "array",
+      items: { type: "object", properties: { name: { type: "string" }, qty: { type: "string" }, notes: { type: "string" } } }
+    },
+    procedure: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          step_number: { type: "number" }, title: { type: "string" },
+          description: { type: "string" }, est_time: { type: "string" }
+        }
+      }
+    },
+    safety_notes: { type: "array", items: { type: "string" } },
+    open_questions: { type: "array", items: { type: "string" } },
+    code: {
+      type: "object",
+      properties: {
+        relevant: { type: "boolean" },
+        language: { type: "string" },
+        filename: { type: "string" },
+        content: { type: "string" },
+        explanation: { type: "string" }
+      }
+    }
+  },
+  required: ["project_title", "summary", "parts", "equipment", "materials", "procedure"]
+};
+
+async function callAI(userMessage){
+  const geminiKey = els.apikey.value.trim();
+  const openrouterKey = els.openrouterkey.value.trim();
+  if (!geminiKey && !openrouterKey){
+    throw new Error('Add a Gemini or OpenRouter API key above first.');
   }
-  profiles[activeProfileId].key = apiKey;
+  profiles[activeProfileId].key = geminiKey;
+  profiles[activeProfileId].openrouterKey = openrouterKey;
+  profiles[activeProfileId].openrouterModel = els.openroutermodel.value.trim();
   saveProfiles();
 
   state.messages.push({ role: 'user', content: userMessage });
 
+  let geminiErr = null;
+  if (geminiKey){
+    try {
+      return await callGemini(geminiKey);
+    } catch(err){
+      geminiErr = err;
+      if (!openrouterKey){ state.messages.pop(); throw err; }
+      console.warn('Gemini failed, falling back to OpenRouter:', err.message);
+    }
+  }
+
+  if (openrouterKey){
+    try {
+      return await callOpenRouter(openrouterKey);
+    } catch(err){
+      state.messages.pop();
+      throw geminiErr
+        ? new Error(`Gemini failed (${geminiErr.message}). OpenRouter fallback also failed (${err.message}).`)
+        : err;
+    }
+  }
+
+  state.messages.pop();
+  throw geminiErr || new Error('No AI provider configured.');
+}
+
+async function callGemini(apiKey){
   const contents = state.messages.map(msg => ({
     role: msg.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: msg.content }]
@@ -760,29 +1006,71 @@ async function callGemini(userMessage){
         parts: [{ text: SYSTEM_PROMPT }]
       },
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: SPEC_RESPONSE_SCHEMA
       }
     })
   });
 
   if (!res.ok){
     const errBody = await res.text();
-    let msg = `API error (${res.status})`;
+    let msg = `Gemini API error (${res.status})`;
     try { msg += ': ' + (JSON.parse(errBody).error?.message || errBody); } catch(e) { msg += ': ' + errBody; }
-    state.messages.pop();
     throw new Error(msg);
   }
 
   const data = await res.json();
   const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
   state.messages.push({ role: 'assistant', content: rawText });
 
   let json;
   try {
     json = JSON.parse(rawText.trim());
   } catch(e){
-    throw new Error('The model returned something that was not valid JSON. Try again — sometimes rephrasing the idea slightly helps.');
+    throw new Error('Gemini returned something that was not valid JSON.');
+  }
+  return json;
+}
+
+async function callOpenRouter(apiKey){
+  const model = els.openroutermodel.value.trim() || 'openrouter/auto';
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...state.messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
+  ];
+
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': location.href,
+      'X-Title': 'MAKESPEC'
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!res.ok){
+    const errBody = await res.text();
+    let msg = `OpenRouter API error (${res.status})`;
+    try { msg += ': ' + (JSON.parse(errBody).error?.message || errBody); } catch(e) { msg += ': ' + errBody; }
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  const rawText = data.choices?.[0]?.message?.content || '';
+  state.messages.push({ role: 'assistant', content: rawText });
+
+  const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
+  let json;
+  try {
+    json = JSON.parse(cleaned);
+  } catch(e){
+    throw new Error('OpenRouter returned something that was not valid JSON.');
   }
   return json;
 }
@@ -854,7 +1142,89 @@ function renderSpec(spec){
     <ul class="notice-list questions">${questions || '<li>None.</li>'}</ul>
   `;
 
+  renderDiagrams(spec.parts || []);
+  renderCodeTab(spec.code);
   render3D(spec.parts || []);
+}
+
+// ============================================================
+// COMPONENT PIN DIAGRAMS
+// ============================================================
+function buildPinDiagramSVG(part){
+  const pins = part.pins || [];
+  const rowH = 34;
+  const svgH = Math.max(120, pins.length * rowH + 60);
+  const bodyW = 90, bodyH = Math.max(60, pins.length * rowH);
+  const bodyX = 70, bodyY = 30;
+  const bodyColor = /^#([0-9a-f]{3}){1,2}$/i.test(part.color_hex || '') ? part.color_hex : '#8fa6b8';
+
+  let pinLines = '';
+  pins.forEach((pin, i) => {
+    const y = bodyY + rowH/2 + i * rowH;
+    const pinColor = /^#([0-9a-f]{3}){1,2}$/i.test(pin.color_hex || '') ? pin.color_hex : '#9aa8b4';
+    pinLines += `
+      <line x1="${bodyX + bodyW}" y1="${y}" x2="${bodyX + bodyW + 50}" y2="${y}" stroke="${pinColor}" stroke-width="4" />
+      <circle cx="${bodyX + bodyW + 50}" cy="${y}" r="4" fill="${pinColor}" />
+      <text x="${bodyX + bodyW + 60}" y="${y + 4}" font-family="IBM Plex Mono, monospace" font-size="11" fill="#2A3944">${escapeXmlAttr(pin.label || 'Pin ' + (i+1))}</text>
+    `;
+  });
+
+  return `<svg viewBox="0 0 320 ${svgH}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${bodyX}" y="${bodyY}" width="${bodyW}" height="${bodyH}" rx="6" fill="${bodyColor}" stroke="#111B24" stroke-width="1.5" />
+    <text x="${bodyX + bodyW/2}" y="${bodyY + bodyH/2 + 4}" font-family="IBM Plex Mono, monospace" font-size="10" fill="#fff" text-anchor="middle" opacity="0.85">${escapeXmlAttr(part.shape || '')}</text>
+    ${pinLines}
+  </svg>`;
+}
+
+function escapeXmlAttr(str){
+  return (str ?? '').toString().replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+function renderDiagrams(parts){
+  const panel = document.getElementById('panel-diagrams');
+  const withPins = (parts || []).filter(p => Array.isArray(p.pins) && p.pins.length > 0);
+  if (!withPins.length){
+    panel.innerHTML = '<p class="diagram-empty">No parts in this spec have multi-pin/multi-terminal connections called out — component diagrams show up here for things like RGB LEDs, sensor breakouts, or motors with distinct terminals.</p>';
+    return;
+  }
+  panel.innerHTML = `<div class="diagram-grid">${withPins.map(p => `
+    <div class="diagram-card">
+      <h4>${escapeHtml(p.name)}</h4>
+      ${buildPinDiagramSVG(p)}
+    </div>`).join('')}</div>`;
+}
+
+// ============================================================
+// CODE TAB
+// ============================================================
+function renderCodeTab(code){
+  const panel = document.getElementById('panel-code');
+  if (!code || !code.relevant || !code.content){
+    panel.innerHTML = '<p class="diagram-empty">No programmable component (microcontroller, SBC, etc.) was identified for this project, so there\'s no starter code to show.</p>';
+    return;
+  }
+  const blockId = 'code-block-' + Math.random().toString(36).slice(2, 9);
+  panel.innerHTML = `
+    ${code.explanation ? `<p class="code-explanation">${escapeHtml(code.explanation)}</p>` : ''}
+    <div class="code-block-wrap">
+      <div class="code-block-head">
+        <span>${escapeHtml(code.filename || 'main')} ${code.language ? '· ' + escapeHtml(code.language) : ''}</span>
+        <button type="button" class="copy-btn" data-target="${blockId}">Copy</button>
+      </div>
+      <pre class="code-block" id="${blockId}">${escapeHtml(code.content)}</pre>
+    </div>
+  `;
+  const copyBtn = panel.querySelector('.copy-btn');
+  copyBtn.addEventListener('click', () => {
+    const text = document.getElementById(blockId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+    }).catch(() => {
+      copyBtn.textContent = 'Failed';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+    });
+  });
 }
 
 // ============================================================
@@ -871,9 +1241,14 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 });
 
 // ============================================================
-// 3D PREVIEW (Three.js)
+// 3D PREVIEW (Three.js) — assembled layout, exploded grid, STL export.
+// Parts are built at true mm scale; the camera auto-frames whatever size
+// the assembly actually turns out to be, instead of a fixed distance/scale.
 // ============================================================
 let renderer, scene, camera, animFrame, partMeshes = [];
+let lastParts = [];
+let viewMode = 'assembled';
+let raycaster, mouseNDC = new THREE.Vector2(), tooltipEl = null;
 
 function initThree(){
   const wrap = document.getElementById('canvas-wrap');
@@ -884,13 +1259,12 @@ function initThree(){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   wrap.appendChild(renderer.domElement);
 
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.1, 5000);
-  camera.position.set(300, 260, 420);
-  camera.lookAt(0,0,0);
+  tooltipEl = document.createElement('div');
+  tooltipEl.className = 'part-tooltip';
+  wrap.appendChild(tooltipEl);
 
-  const grid = new THREE.GridHelper(600, 24, 0x3a5468, 0x223140);
-  scene.add(grid);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.1, 200000);
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.65);
   scene.add(ambient);
@@ -898,14 +1272,139 @@ function initThree(){
   dir.position.set(200, 400, 300);
   scene.add(dir);
 
-  let isDown = false, lastX = 0, lastY = 0, theta = 0.7, phi = 0.9, radius = 550;
+  raycaster = new THREE.Raycaster();
+}
+
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+// Builds a Three.js geometry for a part at its true mm dimensions.
+// The camera does the fitting, not the geometry, so nothing gets clamped here.
+function makePartGeometry(part){
+  const dims = part.dimensions_mm || {};
+  const min = 0.5; // guard against zero/negative degenerate geometry
+  let geometry, size;
+
+  if (part.shape === 'cylinder'){
+    const r = Math.max(dims.radius || 20, min);
+    const h = Math.max(dims.h || dims.height || 40, min);
+    geometry = new THREE.CylinderGeometry(r, r, h, 24);
+    size = { w: r * 2, h: h, d: r * 2 };
+  } else if (part.shape === 'sphere'){
+    const r = Math.max(dims.radius || 20, min);
+    geometry = new THREE.SphereGeometry(r, 20, 16);
+    size = { w: r * 2, h: r * 2, d: r * 2 };
+  } else {
+    const w = Math.max(dims.w || 40, min);
+    const h = Math.max(dims.h || 40, min);
+    const d = Math.max(dims.d || 40, min);
+    geometry = new THREE.BoxGeometry(w, h, d);
+    size = { w, h, d };
+  }
+  return { geometry, size };
+}
+
+function render3D(parts){
+  lastParts = parts || [];
+  if (animFrame) cancelAnimationFrame(animFrame);
+  initThree();
+  partMeshes = [];
+
+  const legend = document.getElementById('part-legend');
+  if(!legend) return;
+  legend.innerHTML = '';
+
+  const hasAssemblyData = viewMode === 'assembled' && lastParts.some(p => p.position_mm);
+
+  // exploded/grid mode: size cells to fit the biggest part actually present
+  const footprints = lastParts.map(p => { const { size } = makePartGeometry(p); return Math.max(size.w, size.d); });
+  const maxFootprint = footprints.length ? Math.max(...footprints) : 100;
+  const cellSize = maxFootprint * 1.6 + 20;
+  const cols = Math.ceil(Math.sqrt(lastParts.length || 1));
+
+  lastParts.forEach((p, i) => {
+    const { geometry } = makePartGeometry(p);
+    const color = /^#([0-9a-f]{3}){1,2}$/i.test(p.color_hex || '') ? p.color_hex : '#8fa6b8';
+    const material = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.15 });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.geometry.computeBoundingBox();
+
+    if (hasAssemblyData && p.position_mm){
+      const pos = p.position_mm || {};
+      const rot = p.rotation_deg || {};
+      mesh.position.set(pos.x || 0, pos.y || 0, pos.z || 0);
+      mesh.rotation.set(
+        (rot.x || 0) * Math.PI / 180,
+        (rot.y || 0) * Math.PI / 180,
+        (rot.z || 0) * Math.PI / 180
+      );
+    } else {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = (col - (cols - 1) / 2) * cellSize;
+      const z = (row - (cols - 1) / 2) * cellSize;
+      const yOffset = (mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y) / 2;
+      mesh.position.set(x, yOffset, z);
+    }
+
+    mesh.userData.part = p;
+    scene.add(mesh);
+    partMeshes.push(mesh);
+
+    const chip = document.createElement('div');
+    chip.className = 'legend-chip';
+    chip.innerHTML = `<span class="swatch" style="background:${color};"></span><span class="chip-label">${escapeHtml(p.name)}</span><button type="button" class="chip-dl" title="Download this part as STL">STL</button>`;
+    chip.querySelector('.chip-label').addEventListener('click', () => {
+      const dim = chip.classList.toggle('dim');
+      mesh.visible = !dim;
+    });
+    chip.querySelector('.chip-dl').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      downloadPartSTL(p);
+    });
+    legend.appendChild(chip);
+  });
+
+  if (!lastParts.length){
+    document.getElementById('canvas-wrap').insertAdjacentHTML('beforeend',
+      '<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#7C8B99; font-family:var(--mono); font-size:0.8rem;">No parts to lay out.</div>');
+    setupCameraAndControls(new THREE.Vector3(0,0,0), 200);
+    startAnimating();
+    return;
+  }
+
+  // frame the camera & grid to whatever size this assembly actually is
+  const box = new THREE.Box3();
+  partMeshes.forEach(m => { m.updateMatrixWorld(true); box.expandByObject(m); });
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const boundingRadius = Math.max(size.length() / 2, 30);
+
+  const gridSize = Math.max(size.x, size.z, 100) * 2.6;
+  const grid = new THREE.GridHelper(gridSize, 20, 0x3a5468, 0x223140);
+  grid.position.set(center.x, box.min.y, center.z);
+  scene.add(grid);
+
+  setupCameraAndControls(center, boundingRadius);
+  startAnimating();
+}
+
+function setupCameraAndControls(target, boundingRadius){
+  const fovRad = camera.fov * Math.PI / 180;
+  const fitRadius = clamp(boundingRadius / Math.sin(fovRad / 2) * 1.35, 60, 100000);
+
+  let theta = 0.7, phi = 0.95, radius = fitRadius;
+  const minRadius = boundingRadius * 0.35;
+  const maxRadius = boundingRadius * 6;
+
   function updateCam(){
-    camera.position.x = radius * Math.sin(phi) * Math.sin(theta);
-    camera.position.y = radius * Math.cos(phi);
-    camera.position.z = radius * Math.sin(phi) * Math.cos(theta);
-    camera.lookAt(0,0,0);
+    camera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
+    camera.position.y = target.y + radius * Math.cos(phi);
+    camera.position.z = target.z + radius * Math.sin(phi) * Math.cos(theta);
+    camera.lookAt(target);
   }
   updateCam();
+
+  let isDown = false, lastX = 0, lastY = 0;
   renderer.domElement.addEventListener('mousedown', e => { isDown = true; lastX = e.clientX; lastY = e.clientY; });
   window.addEventListener('mouseup', () => isDown = false);
   window.addEventListener('mousemove', e => {
@@ -917,83 +1416,39 @@ function initThree(){
   });
   renderer.domElement.addEventListener('wheel', e => {
     e.preventDefault();
-    radius = Math.min(Math.max(radius + e.deltaY * 0.4, 100), 1400);
+    radius = clamp(radius + e.deltaY * boundingRadius * 0.0015, minRadius, maxRadius);
     updateCam();
   }, { passive: false });
 
+  renderer.domElement.addEventListener('mousemove', e => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouseNDC, camera);
+    const hits = raycaster.intersectObjects(partMeshes);
+    if (hits.length){
+      const part = hits[0].object.userData.part;
+      const dims = part.dimensions_mm || {};
+      const dimText = part.shape === 'box'
+        ? `${dims.w || '?'} × ${dims.h || '?'} × ${dims.d || '?'} mm`
+        : `⌀${dims.radius ? dims.radius * 2 : '?'} × ${dims.h || dims.height || '?'} mm`;
+      tooltipEl.innerHTML = `<span class="tt-name">${escapeHtml(part.name)}</span><span class="tt-dims">${escapeHtml(dimText)}</span>`;
+      tooltipEl.style.display = 'block';
+      tooltipEl.style.left = (e.clientX - rect.left + 14) + 'px';
+      tooltipEl.style.top = (e.clientY - rect.top + 14) + 'px';
+    } else {
+      tooltipEl.style.display = 'none';
+    }
+  });
+  renderer.domElement.addEventListener('mouseleave', () => { tooltipEl.style.display = 'none'; });
+}
+
+function startAnimating(){
   function animate(){
     animFrame = requestAnimationFrame(animate);
     renderer.render(scene, camera);
   }
   animate();
-}
-
-function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-
-function render3D(parts){
-  if (animFrame) cancelAnimationFrame(animFrame);
-  initThree();
-  partMeshes = [];
-
-  const legend = document.getElementById('part-legend');
-  if(!legend) return;
-  legend.innerHTML = '';
-
-  const cols = Math.ceil(Math.sqrt(parts.length || 1));
-  const cellSize = 130;
-
-  parts.forEach((p, i) => {
-    const dims = p.dimensions_mm || {};
-    const scale = 0.3; 
-    let geometry;
-    let footprint = 60;
-
-    if (p.shape === 'cylinder'){
-      const r = clamp((dims.radius || 20) * scale, 4, 90);
-      const h = clamp((dims.h || dims.height || 40) * scale, 4, 220);
-      geometry = new THREE.CylinderGeometry(r, r, h, 24);
-      footprint = r * 2;
-    } else if (p.shape === 'sphere'){
-      const r = clamp((dims.radius || 20) * scale, 4, 90);
-      geometry = new THREE.SphereGeometry(r, 20, 16);
-      footprint = r * 2;
-    } else {
-      const w = clamp((dims.w || 40) * scale, 4, 220);
-      const h = clamp((dims.h || 40) * scale, 4, 220);
-      const d = clamp((dims.d || 40) * scale, 4, 220);
-      geometry = new THREE.BoxGeometry(w, h, d);
-      footprint = Math.max(w, d);
-    }
-
-    const color = /^#([0-9a-f]{3}){1,2}$/i.test(p.color_hex || '') ? p.color_hex : '#8fa6b8';
-    const material = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.15 });
-    const mesh = new THREE.Mesh(geometry, material);
-
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = (col - (cols - 1) / 2) * cellSize;
-    const z = (row - (cols - 1) / 2) * cellSize;
-    mesh.geometry.computeBoundingBox();
-    const yOffset = (mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y) / 2;
-    mesh.position.set(x, yOffset, z);
-    mesh.userData.label = p.name;
-    scene.add(mesh);
-    partMeshes.push(mesh);
-
-    const chip = document.createElement('div');
-    chip.className = 'legend-chip';
-    chip.innerHTML = `<span class="swatch" style="background:${color};"></span>${escapeHtml(p.name)}`;
-    chip.addEventListener('click', () => {
-      const dim = chip.classList.toggle('dim');
-      mesh.visible = !dim;
-    });
-    legend.appendChild(chip);
-  });
-
-  if (!parts.length){
-    document.getElementById('canvas-wrap').insertAdjacentHTML('beforeend',
-      '<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#7C8B99; font-family:var(--mono); font-size:0.8rem;">No parts to lay out.</div>');
-  }
 }
 
 function onResize(){
@@ -1005,6 +1460,112 @@ function onResize(){
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', onResize);
+
+document.getElementById('viewModeToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.viewmode-btn');
+  if (!btn) return;
+  viewMode = btn.dataset.mode;
+  document.querySelectorAll('.viewmode-btn').forEach(b => b.classList.toggle('active', b === btn));
+  render3D(lastParts);
+});
+
+// ============================================================
+// STL EXPORT — ASCII STL built directly from Three.js geometry,
+// at true mm scale (independent of the on-screen preview scale).
+// ============================================================
+function geometryTrianglesToASCIISTL(solidName, geometry, matrix){
+  const pos = geometry.attributes.position;
+  const idx = geometry.index;
+  const lines = [`solid ${solidName}`];
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const triCount = idx ? idx.count / 3 : pos.count / 3;
+
+  for (let t = 0; t < triCount; t++){
+    let ia, ib, ic;
+    if (idx){ ia = idx.getX(t*3); ib = idx.getX(t*3+1); ic = idx.getX(t*3+2); }
+    else { ia = t*3; ib = t*3+1; ic = t*3+2; }
+    a.fromBufferAttribute(pos, ia).applyMatrix4(matrix);
+    b.fromBufferAttribute(pos, ib).applyMatrix4(matrix);
+    c.fromBufferAttribute(pos, ic).applyMatrix4(matrix);
+    const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize();
+    lines.push(`  facet normal ${n.x.toFixed(6)} ${n.y.toFixed(6)} ${n.z.toFixed(6)}`);
+    lines.push('    outer loop');
+    [a,b,c].forEach(v => lines.push(`      vertex ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}`));
+    lines.push('    endloop');
+    lines.push('  endfacet');
+  }
+  lines.push(`endsolid ${solidName}`);
+  return lines.join('\n');
+}
+
+function partSolidName(part){
+  return (part.name || 'part').replace(/[^a-zA-Z0-9_]+/g, '_');
+}
+
+function buildPartMatrix(part, useAssemblyPosition){
+  const matrix = new THREE.Matrix4();
+  if (useAssemblyPosition && part.position_mm){
+    const pos = part.position_mm || {};
+    const rot = part.rotation_deg || {};
+    const euler = new THREE.Euler((rot.x||0)*Math.PI/180, (rot.y||0)*Math.PI/180, (rot.z||0)*Math.PI/180);
+    matrix.makeRotationFromEuler(euler);
+    matrix.setPosition(pos.x || 0, pos.y || 0, pos.z || 0);
+  }
+  return matrix;
+}
+
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], { type: mime || 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadPartSTL(part){
+  const { geometry } = makePartGeometry(part);
+  const stl = geometryTrianglesToASCIISTL(partSolidName(part), geometry, new THREE.Matrix4());
+  downloadBlob(stl, `${partSolidName(part).toLowerCase()}.stl`, 'model/stl');
+}
+
+function buildAssemblySTLString(parts){
+  const lines = [];
+  parts.forEach(part => {
+    const { geometry } = makePartGeometry(part);
+    const matrix = buildPartMatrix(part, true);
+    const solid = geometryTrianglesToASCIISTL(partSolidName(part), geometry, matrix);
+    // strip this solid's own solid/endsolid wrapper lines so all parts merge into one solid below
+    const inner = solid.split('\n').slice(1, -1).join('\n');
+    lines.push(inner);
+  });
+  return `solid assembly\n${lines.join('\n')}\nendsolid assembly`;
+}
+
+document.getElementById('downloadAssemblyBtn').addEventListener('click', () => {
+  if (!lastParts.length) return;
+  const stl = buildAssemblySTLString(lastParts);
+  const title = (state.currentSpec?.project_title || 'assembly').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  downloadBlob(stl, `${title}_full_assembly.stl`, 'model/stl');
+});
+
+document.getElementById('downloadAllZipBtn').addEventListener('click', async () => {
+  if (!lastParts.length || typeof JSZip === 'undefined') return;
+  const zip = new JSZip();
+  lastParts.forEach(part => {
+    const { geometry } = makePartGeometry(part);
+    const stl = geometryTrianglesToASCIISTL(partSolidName(part), geometry, new THREE.Matrix4());
+    zip.file(`${partSolidName(part).toLowerCase()}.stl`, stl);
+  });
+  zip.file('full_assembly.stl', buildAssemblySTLString(lastParts));
+  const content = await zip.generateAsync({ type: 'blob' });
+  const title = (state.currentSpec?.project_title || 'makespec').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = `${title}_parts.zip`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
 // ============================================================
 // GENERATE / REVISE HANDLERS
@@ -1025,7 +1586,7 @@ els.generateBtn.addEventListener('click', async () => {
   try {
     state.messages = [];
     state.revision = 0;
-    const spec = await callGemini(buildInitialPrompt());
+    const spec = await callAI(buildInitialPrompt());
     renderSpec(spec);
     els.stampRev.textContent = '0';
     els.stampStatus.textContent = 'Generated';
@@ -1049,7 +1610,7 @@ els.reviseBtn.addEventListener('click', async () => {
   if (!req) return;
   setBusy(els.reviseBtn, els.reviseStatus, true, 'Applying revision…');
   try {
-    const spec = await callGemini(`Revision request: ${req}\nUpdate the build spec JSON accordingly.`);
+    const spec = await callAI(`Revision request: ${req}\nUpdate the build spec JSON accordingly.`);
     state.revision++;
     renderSpec(spec);
     els.stampRev.textContent = state.revision;
