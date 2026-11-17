@@ -40,3 +40,15 @@ The system operates entirely within a decentralized client-side runtime, bypassi
    ```bash
    git clone [https://github.com/](https://github.com/)Ed13s/makespec.git
    cd makespec
+   ```
+
+---
+
+## Circuit Diagrams and Code Generation
+
+For projects with electronics, the generated spec now includes:
+
+* **Wiring diagram** (Circuit & pinouts tab): components laid out around the main controller with colour-coded, routed wires, a connection table (hover a row to highlight its wire), and a one-click `.svg` download. Per-part pinouts are listed below it.
+* **Code** (Code tab): a complete starter program with pins declared as named constants that match the circuit, plus optional extra files, required libraries and compile/upload steps. Copy or download each file, or grab everything as a `.zip`.
+
+Both come from the same model response, so ask for changes in the Request Changes box (e.g. "use MicroPython instead" or "move the LED to GPIO 5") and the circuit and code update together. The wiring is AI-generated, so check it against the datasheets before powering anything.

@@ -493,6 +493,24 @@
     overflow-x: auto; border-radius: 0 0 var(--radius) var(--radius);
   }
   .code-explanation { color: var(--ink-soft); font-size: 0.92rem; margin-bottom: 16px; }
+  .code-meta { font-size: 0.9rem; color: var(--ink-soft); margin: 0 0 12px; }
+  .code-purpose { font-size: 0.82rem; color: var(--ink-faint); font-family: var(--mono); margin: 0 0 6px; }
+  .code-block-head .head-actions { display: flex; gap: 6px; }
+  .code-toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  /* ===== Circuit diagram ===== */
+  .diagram-heading { font-family: var(--mono); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 12px; }
+  .diagram-heading.spaced { margin-top: 32px; }
+  .circuit-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+  .circuit-wrap { border: 1px solid var(--ink-faint); border-radius: var(--radius); background: #FFFFFF; overflow-x: auto; padding: 8px; margin-bottom: 20px; }
+  .circuit-wrap svg { display: block; width: 100%; min-width: 640px; height: auto; }
+  .circuit-wrap .wire { transition: opacity 0.15s; }
+  .circuit-wrap.focus .wire { opacity: 0.12; }
+  .circuit-wrap.focus .wire.hot { opacity: 1; }
+  .wire-table td .wire-swatch { display: inline-block; width: 22px; height: 6px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.25); vertical-align: middle; margin-right: 8px; }
+  .wire-table tr[data-wire] { cursor: default; }
+  .wire-table .pinref { font-family: var(--mono); font-size: 0.82rem; }
+  .diagram-note { font-size: 0.82rem; color: var(--ink-faint); border-left: 4px solid var(--warning-border); background: var(--warning-bg); padding: 10px 14px; border-radius: var(--radius); margin: 8px 0 0; }
 
   @media (prefers-reduced-motion: reduce) {
     .spinner { animation: none; }
@@ -611,7 +629,7 @@
         <div class="tab" data-tab="materials">Materials</div>
         <div class="tab" data-tab="procedure">Procedure</div>
         <div class="tab" data-tab="preview">3D layout</div>
-        <div class="tab" data-tab="diagrams">Diagrams</div>
+        <div class="tab" data-tab="diagrams">Circuit &amp; pinouts</div>
         <div class="tab" data-tab="code">Code</div>
         <div class="tab" data-tab="notes">Safety &amp; notes</div>
       </div>
@@ -828,12 +846,25 @@ Schema:
   "procedure": [ { "step_number": number, "title": string, "description": string, "est_time": string } ],
   "safety_notes": [ string ],
   "open_questions": [ string ],
+  "circuit": {
+    "relevant": boolean,
+    "explanation": string (how the circuit works, voltage levels, anything to double-check),
+    "components": [
+      { "id": string (short unique id like "esp32" or "r1"), "name": string, "kind": "controller" | "sensor" | "actuator" | "display" | "power" | "passive" | "connector" | "other", "pins": [ string ] }
+    ],
+    "connections": [
+      { "net": string (e.g. "GND", "3V3", "LED_DATA"), "from_component": string, "from_pin": string, "to_component": string, "to_pin": string, "wire_color_hex": string, "notes": string }
+    ]
+  },
   "code": {
     "relevant": boolean,
     "language": string,
     "filename": string,
     "content": string,
-    "explanation": string
+    "explanation": string,
+    "extra_files": [ { "filename": string, "language": string, "content": string, "purpose": string } ],
+    "libraries": [ string ],
+    "setup": string (how to compile/upload or run it, board/toolchain settings)
   }
 }
 
@@ -843,7 +874,8 @@ Rules:
 - position_mm and rotation_deg place the part in the FINISHED, ASSEMBLED product, all sharing one coordinate system: origin (0,0,0) is the center of the assembly's base/footprint, +y is straight up, +x and +z span the footprint. Every part's position should reflect roughly where it actually sits relative to every other part once assembled (e.g. a base panel near y=0, a component mounted on top of it at a higher y, two side rails offset in x on either side of a center part at z=0). Think through the physical arrangement before assigning numbers so parts don't collide and the assembly reads as one coherent object.
 - rotation_deg should be non-zero whenever a part is naturally oriented sideways or at an angle in the assembly (e.g. a horizontal shaft rotated 90 degrees on z).
 - pins: ONLY include this array for parts that have multiple distinct, named connection points a builder needs to tell apart — e.g. an RGB LED (Red anode, Green anode, Blue anode, Common cathode/ground), a sensor breakout (VCC, GND, SDA, SCL), a motor (Terminal A, Terminal B), a connector or header. Order pins the way they physically appear on the part (e.g. left to right). Omit "pins" entirely (or leave it an empty array) for simple parts like a single screw, a plain board, or plywood — don't invent pins that don't exist.
-- code: only set "relevant": true and fill this in when the project involves a microcontroller, single-board computer, or anything programmable (Arduino, ESP32, Raspberry Pi, etc). Provide one complete, runnable starter file (not a fragment) covering the core behavior described, with brief inline comments. If the project has no programmable component, set "relevant": false and leave the other code fields empty strings.
+- circuit: set "relevant": true whenever electronic parts are wired together (a microcontroller project, but also something simple like a battery, switch and LED). Every electrical component goes in "components" with a short unique "id", and "pins" lists the pins actually used, labelled the way they are printed on the part or board (e.g. "3V3", "GND", "GPIO4", "SDA", "Anode"). Include the power source, resistors (put the value in the name, e.g. "220 ohm resistor"), level shifters, drivers and connectors. "connections" are point-to-point wires: each one names two component ids and two pins that exist in those components' "pins" lists. Give power and ground their own explicit connections to every pin that needs them (one connection per pin, not shared rails). Use the net name to say what the wire carries. Choose pins and voltages that are actually compatible (3.3V vs 5V logic, current-limiting resistors on LEDs, flyback diodes on motors/relays). Use "explanation" to flag anything the builder must verify. If nothing in the project is electrical, set "relevant": false and use empty arrays.
+- code: only set "relevant": true and fill this in when the project involves a microcontroller, single-board computer, or anything programmable (Arduino, ESP32, Raspberry Pi, etc). Put the main program in "content" with its "filename" and "language" as one complete, runnable file (not a fragment) covering the core behavior described, with brief inline comments. If the project genuinely needs more files (a config header, a web UI page, a helper module), put them in "extra_files"; otherwise leave it empty and do not pad. Declare every pin or GPIO as a named constant at the top of the code, named after the circuit pin labels, and make the pin numbers match the circuit connections exactly. List required libraries in "libraries" and say how to compile/upload or run it in "setup". If the project has no programmable component, set "relevant": false and leave the other code fields empty.
 - Tailor tool/equipment complexity to the stated skill level.
 - Keep procedure steps concrete and ordered; include realistic time estimates.
 - Always include safety_notes relevant to the tools/materials involved.
@@ -934,6 +966,42 @@ const SPEC_RESPONSE_SCHEMA = {
     },
     safety_notes: { type: "array", items: { type: "string" } },
     open_questions: { type: "array", items: { type: "string" } },
+    circuit: {
+      type: "object",
+      properties: {
+        relevant: { type: "boolean" },
+        explanation: { type: "string" },
+        components: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              name: { type: "string" },
+              kind: { type: "string", enum: ["controller", "sensor", "actuator", "display", "power", "passive", "connector", "other"] },
+              pins: { type: "array", items: { type: "string" } }
+            },
+            required: ["id", "name", "pins"]
+          }
+        },
+        connections: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              net: { type: "string" },
+              from_component: { type: "string" },
+              from_pin: { type: "string" },
+              to_component: { type: "string" },
+              to_pin: { type: "string" },
+              wire_color_hex: { type: "string" },
+              notes: { type: "string" }
+            },
+            required: ["from_component", "from_pin", "to_component", "to_pin"]
+          }
+        }
+      }
+    },
     code: {
       type: "object",
       properties: {
@@ -941,7 +1009,22 @@ const SPEC_RESPONSE_SCHEMA = {
         language: { type: "string" },
         filename: { type: "string" },
         content: { type: "string" },
-        explanation: { type: "string" }
+        explanation: { type: "string" },
+        extra_files: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              filename: { type: "string" },
+              language: { type: "string" },
+              content: { type: "string" },
+              purpose: { type: "string" }
+            },
+            required: ["filename", "content"]
+          }
+        },
+        libraries: { type: "array", items: { type: "string" } },
+        setup: { type: "string" }
       }
     }
   },
@@ -1142,7 +1225,7 @@ function renderSpec(spec){
     <ul class="notice-list questions">${questions || '<li>None.</li>'}</ul>
   `;
 
-  renderDiagrams(spec.parts || []);
+  renderDiagrams(spec.parts || [], spec.circuit);
   renderCodeTab(spec.code);
   render3D(spec.parts || []);
 }
@@ -1180,51 +1263,328 @@ function escapeXmlAttr(str){
   return (str ?? '').toString().replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
-function renderDiagrams(parts){
-  const panel = document.getElementById('panel-diagrams');
-  const withPins = (parts || []).filter(p => Array.isArray(p.pins) && p.pins.length > 0);
-  if (!withPins.length){
-    panel.innerHTML = '<p class="diagram-empty">No parts in this spec have multi-pin/multi-terminal connections called out — component diagrams show up here for things like RGB LEDs, sensor breakouts, or motors with distinct terminals.</p>';
-    return;
+// ============================================================
+// CIRCUIT / WIRING DIAGRAM
+// Components are laid out in columns around the most-connected one
+// (usually the microcontroller). Each wire is routed through the gaps
+// between columns, so it stays readable without a layout library.
+// ============================================================
+const NET_PALETTE = ['#C26315', '#2B5C47', '#3B6FB6', '#8A4FA0', '#B8860B', '#1F8A9E', '#A23B6B', '#6B7A2E', '#4F6D7A'];
+const KIND_COLORS = { controller: '#2B4A6B', sensor: '#2B5C47', actuator: '#8F4506', display: '#5B3F8C', power: '#962B2B', passive: '#5A6B78', connector: '#4A4A4A', other: '#3F5161' };
+
+function isHexColor(c){ return /^#([0-9a-f]{3}){1,2}$/i.test(c || ''); }
+
+function wireColorFor(conn, i){
+  if (isHexColor(conn.wire_color_hex)) return conn.wire_color_hex;
+  const text = `${conn.net || ''} ${conn.from_pin || ''} ${conn.to_pin || ''}`;
+  if (/gnd|ground|\b0v\b|vss/i.test(text)) return '#222222';
+  if (/vcc|\b5v\b|3v3|3\.3v|vin|vdd|\+v|vbat/i.test(text)) return '#D1301F';
+  return NET_PALETTE[i % NET_PALETTE.length];
+}
+
+function buildCircuitSVG(circuit){
+  const comps = (circuit.components || []).filter(c => c && c.id).map(c => ({
+    id: String(c.id),
+    name: String(c.name || c.id),
+    kind: KIND_COLORS[c.kind] ? c.kind : 'other',
+    pins: (Array.isArray(c.pins) ? c.pins : []).map(String)
+  }));
+  const byId = new Map(comps.map(c => [c.id, c]));
+
+  const wires = [];
+  (circuit.connections || []).forEach(k => {
+    if (!k) return;
+    const a = byId.get(String(k.from_component)), b = byId.get(String(k.to_component));
+    if (!a || !b || !k.from_pin || !k.to_pin) return;
+    const fp = String(k.from_pin), tp = String(k.to_pin);
+    if (!a.pins.includes(fp)) a.pins.push(fp);
+    if (!b.pins.includes(tp)) b.pins.push(tp);
+    wires.push({ a, b, fp, tp, net: String(k.net || ''), notes: String(k.notes || ''), color: wireColorFor(k, wires.length) });
+  });
+  if (!comps.length || !wires.length) return null;
+
+  // --- choose a hub and assign columns ---
+  comps.forEach(c => { c.deg = 0; });
+  wires.forEach(w => { w.a.deg++; w.b.deg++; });
+  const hub = comps.slice().sort((x, y) => (y.deg - x.deg) || ((y.kind === 'controller') - (x.kind === 'controller')))[0];
+  hub.col = 0;
+
+  const neighborsOf = c => wires.filter(w => w.a === c || w.b === c).map(w => (w.a === c ? w.b : w.a));
+  const depth = new Map([[hub, 0]]);
+  const parent = new Map();
+  const order = [];
+  const queue = [hub];
+  while (queue.length){
+    const cur = queue.shift();
+    neighborsOf(cur).forEach(n => {
+      if (!depth.has(n)){ depth.set(n, depth.get(cur) + 1); parent.set(n, cur); order.push(n); queue.push(n); }
+    });
   }
-  panel.innerHTML = `<div class="diagram-grid">${withPins.map(p => `
-    <div class="diagram-card">
-      <h4>${escapeHtml(p.name)}</h4>
-      ${buildPinDiagramSVG(p)}
-    </div>`).join('')}</div>`;
+  comps.forEach(c => { if (!depth.has(c)){ depth.set(c, 1); order.push(c); } });
+
+  const sideCount = { '-1': 0, '1': 0 };
+  order.forEach(c => {
+    if (depth.get(c) === 1){
+      // side with the most links to already-placed neighbours, balanced against how full each side is
+      const score = { '-1': -0.5 * sideCount['-1'], '1': -0.5 * sideCount['1'] + 0.01 };
+      neighborsOf(c).forEach(n => { if (n.col !== undefined && n.col !== 0) score[String(Math.sign(n.col))] += 1; });
+      const side = score['1'] >= score['-1'] ? 1 : -1;
+      c.col = side;
+      sideCount[String(side)]++;
+    } else {
+      const p = parent.get(c);
+      c.col = p.col + Math.sign(p.col);
+    }
+  });
+
+  // --- pin sides ---
+  comps.forEach(c => { c.left = []; c.right = []; });
+  function pinSide(c, pin){
+    for (const w of wires){
+      let other = null;
+      if (w.a === c && w.fp === pin) other = w.b;
+      else if (w.b === c && w.tp === pin) other = w.a;
+      if (other) return other.col < c.col ? 'L' : 'R';
+    }
+    return c.col > 0 ? 'L' : (c.col < 0 ? 'R' : 'L');
+  }
+  comps.forEach(c => c.pins.forEach(p => { (pinSide(c, p) === 'L' ? c.left : c.right).push(p); }));
+
+  // --- box sizes ---
+  const CHAR = 6.7, ROW = 22, HEAD = 26;
+  comps.forEach(c => {
+    const lw = Math.max(0, ...c.left.map(p => p.length)) * CHAR;
+    const rw = Math.max(0, ...c.right.map(p => p.length)) * CHAR;
+    c.w = Math.max(c.name.length * 7.4 + 24, lw + rw + 46, 120);
+    c.h = HEAD + Math.max(c.left.length, c.right.length, 1) * ROW + 10;
+  });
+
+  const cols = [...new Set(comps.map(c => c.col))].sort((x, y) => x - y);
+  const minCol = cols[0], maxCol = cols[cols.length - 1];
+  const gapOf = (c, side) => (side === 'R' ? c.col : c.col - 1);
+
+  // --- allocate wire channels (one vertical lane per wire per gap) ---
+  const gapSlots = {};
+  let corridorCount = 0;
+  const takeSlot = g => { gapSlots[g] = (gapSlots[g] || 0) + 1; return gapSlots[g] - 1; };
+  wires.forEach(w => {
+    w.sa = pinSide(w.a, w.fp); w.sb = pinSide(w.b, w.tp);
+    w.ga = gapOf(w.a, w.sa); w.gb = gapOf(w.b, w.sb);
+    w.slotA = takeSlot(w.ga);
+    if (w.gb === w.ga){ w.slotB = w.slotA; w.corridor = -1; }
+    else { w.slotB = takeSlot(w.gb); w.corridor = corridorCount++; }
+  });
+
+  const LANE = 13;
+  const gapWidth = {};
+  for (let g = minCol - 1; g <= maxCol; g++) gapWidth[g] = Math.max(64, (gapSlots[g] || 0) * LANE + 34);
+  const colWidth = {};
+  cols.forEach(cc => { colWidth[cc] = Math.max(...comps.filter(c => c.col === cc).map(c => c.w)); });
+
+  const colX = {}, gapLeft = {};
+  let cursor = 0;
+  for (let g = minCol - 1; g <= maxCol; g++){
+    gapLeft[g] = cursor;
+    cursor += gapWidth[g];
+    if (g + 1 <= maxCol){ colX[g + 1] = cursor; cursor += colWidth[g + 1] || 0; }
+  }
+  const totalW = Math.ceil(cursor);
+
+  const topReserve = corridorCount ? 18 + corridorCount * 11 : 12;
+  const colHeight = {};
+  cols.forEach(cc => {
+    const list = comps.filter(c => c.col === cc);
+    colHeight[cc] = list.reduce((s, c) => s + c.h, 0) + (list.length - 1) * 26;
+  });
+  const maxH = Math.max(...Object.values(colHeight));
+  cols.forEach(cc => {
+    let y = topReserve + (maxH - colHeight[cc]) / 2;
+    comps.filter(c => c.col === cc).forEach(c => {
+      c.x = colX[cc] + (colWidth[cc] - c.w) / 2;
+      c.y = y;
+      y += c.h + 26;
+    });
+  });
+  const totalH = Math.ceil(topReserve + maxH + 14);
+
+  const pinPos = (c, pin) => {
+    const left = c.left.indexOf(pin);
+    const isLeft = left !== -1;
+    const idx = isLeft ? left : c.right.indexOf(pin);
+    return { x: isLeft ? c.x : c.x + c.w, y: c.y + HEAD + idx * ROW + ROW / 2 };
+  };
+  const laneX = (g, slot) => gapLeft[g] + 16 + slot * LANE;
+
+  // --- draw ---
+  let wireSvg = '', boxSvg = '';
+  wires.forEach((w, i) => {
+    const pa = pinPos(w.a, w.fp), pb = pinPos(w.b, w.tp);
+    const xa = laneX(w.ga, w.slotA), xb = laneX(w.gb, w.slotB);
+    const pts = [pa, { x: xa, y: pa.y }];
+    if (w.corridor === -1){ pts.push({ x: xa, y: pb.y }); }
+    else {
+      const yc = 8 + w.corridor * 11;
+      pts.push({ x: xa, y: yc }, { x: xb, y: yc }, { x: xb, y: pb.y });
+    }
+    pts.push(pb);
+    const poly = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    wireSvg += `<g class="wire" data-wire="${i}">
+      <polyline points="${poly}" fill="none" stroke="#111B24" stroke-opacity="0.3" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+      <polyline points="${poly}" fill="none" stroke="${w.color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${pa.x}" cy="${pa.y}" r="3.6" fill="${w.color}" stroke="#111B24" stroke-width="1"/>
+      <circle cx="${pb.x}" cy="${pb.y}" r="3.6" fill="${w.color}" stroke="#111B24" stroke-width="1"/>
+    </g>`;
+  });
+
+  comps.forEach(c => {
+    const hc = KIND_COLORS[c.kind];
+    boxSvg += `<g>
+      <rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="5" fill="#F4F7FA" stroke="#111B24" stroke-width="1.6"/>
+      <path d="M${c.x},${c.y + HEAD} V${c.y + 5} Q${c.x},${c.y} ${c.x + 5},${c.y} H${c.x + c.w - 5} Q${c.x + c.w},${c.y} ${c.x + c.w},${c.y + 5} V${c.y + HEAD} Z" fill="${hc}"/>
+      <text x="${c.x + c.w / 2}" y="${c.y + 17}" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${escapeXmlAttr(c.name)}</text>
+      ${c.left.map((p, i) => `<text x="${c.x + 10}" y="${c.y + HEAD + i * ROW + ROW / 2 + 4}" font-family="IBM Plex Mono, monospace" font-size="11" fill="#2A3944">${escapeXmlAttr(p)}</text>`).join('')}
+      ${c.right.map((p, i) => `<text x="${c.x + c.w - 10}" y="${c.y + HEAD + i * ROW + ROW / 2 + 4}" font-family="IBM Plex Mono, monospace" font-size="11" fill="#2A3944" text-anchor="end">${escapeXmlAttr(p)}</text>`).join('')}
+    </g>`;
+  });
+
+  const svg = `<svg viewBox="0 0 ${totalW} ${totalH}" width="${totalW}" height="${totalH}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100%" height="100%" fill="#FFFFFF"/>
+    ${wireSvg}${boxSvg}
+  </svg>`;
+  return { svg, wires, comps };
+}
+
+let currentCircuitSVG = '';
+
+function renderDiagrams(parts, circuit){
+  const panel = document.getElementById('panel-diagrams');
+  currentCircuitSVG = '';
+  let html = '';
+
+  const built = circuit && circuit.relevant !== false ? buildCircuitSVG(circuit) : null;
+  if (built){
+    currentCircuitSVG = built.svg;
+    const rows = built.wires.map((w, i) => `
+      <tr data-wire="${i}">
+        <td><span class="wire-swatch" style="background:${w.color};"></span>${escapeHtml(w.net || '—')}</td>
+        <td class="pinref">${escapeHtml(w.a.name)} · ${escapeHtml(w.fp)}</td>
+        <td class="pinref">${escapeHtml(w.b.name)} · ${escapeHtml(w.tp)}</td>
+        <td>${escapeHtml(w.notes)}</td>
+      </tr>`).join('');
+    html += `
+      <h3 class="diagram-heading">Wiring diagram</h3>
+      ${circuit.explanation ? `<p class="code-explanation">${escapeHtml(circuit.explanation)}</p>` : ''}
+      <div class="circuit-toolbar"><button type="button" class="btn-sm" id="downloadCircuitBtn">Download circuit (.svg)</button></div>
+      <div class="circuit-wrap" id="circuitWrap">${built.svg}</div>
+      <table class="wire-table"><thead><tr><th>Net</th><th>From</th><th>To</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="diagram-note">AI-generated wiring. Check every connection against the datasheets — especially voltage levels (3.3V vs 5V), polarity, and current limits — before you power anything up.</p>`;
+  } else {
+    html += '<p class="diagram-empty">No wiring diagram for this spec — it shows up here when the project has electronic parts that connect to each other.</p>';
+  }
+
+  const withPins = (parts || []).filter(p => Array.isArray(p.pins) && p.pins.length > 0);
+  if (withPins.length){
+    html += `<h3 class="diagram-heading spaced">Component pinouts</h3>
+      <div class="diagram-grid">${withPins.map(p => `
+        <div class="diagram-card">
+          <h4>${escapeHtml(p.name)}</h4>
+          ${buildPinDiagramSVG(p)}
+        </div>`).join('')}</div>`;
+  }
+  panel.innerHTML = html;
+
+  if (built){
+    const wrap = document.getElementById('circuitWrap');
+    panel.querySelectorAll('.wire-table tr[data-wire]').forEach(row => {
+      row.addEventListener('mouseenter', () => {
+        wrap.classList.add('focus');
+        wrap.querySelector(`.wire[data-wire="${row.dataset.wire}"]`)?.classList.add('hot');
+      });
+      row.addEventListener('mouseleave', () => {
+        wrap.classList.remove('focus');
+        wrap.querySelectorAll('.wire.hot').forEach(g => g.classList.remove('hot'));
+      });
+    });
+    document.getElementById('downloadCircuitBtn').addEventListener('click', () => {
+      const title = (state.currentSpec?.project_title || 'circuit').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      downloadBlob(currentCircuitSVG, `${title}_circuit.svg`, 'image/svg+xml');
+    });
+  }
 }
 
 // ============================================================
 // CODE TAB
 // ============================================================
+function collectCodeFiles(code){
+  const files = [];
+  if (code && code.content){
+    files.push({ filename: code.filename || 'main', language: code.language || '', content: code.content, purpose: '' });
+  }
+  (code && Array.isArray(code.extra_files) ? code.extra_files : []).forEach(f => {
+    if (f && f.content) files.push({ filename: f.filename || 'file', language: f.language || '', content: f.content, purpose: f.purpose || '' });
+  });
+  return files;
+}
+
 function renderCodeTab(code){
   const panel = document.getElementById('panel-code');
-  if (!code || !code.relevant || !code.content){
+  const files = collectCodeFiles(code);
+  if (!code || !code.relevant || !files.length){
     panel.innerHTML = '<p class="diagram-empty">No programmable component (microcontroller, SBC, etc.) was identified for this project, so there\'s no starter code to show.</p>';
     return;
   }
-  const blockId = 'code-block-' + Math.random().toString(36).slice(2, 9);
+  const libs = Array.isArray(code.libraries) ? code.libraries.filter(Boolean) : [];
   panel.innerHTML = `
     ${code.explanation ? `<p class="code-explanation">${escapeHtml(code.explanation)}</p>` : ''}
-    <div class="code-block-wrap">
-      <div class="code-block-head">
-        <span>${escapeHtml(code.filename || 'main')} ${code.language ? '· ' + escapeHtml(code.language) : ''}</span>
-        <button type="button" class="copy-btn" data-target="${blockId}">Copy</button>
-      </div>
-      <pre class="code-block" id="${blockId}">${escapeHtml(code.content)}</pre>
-    </div>
+    ${libs.length ? `<p class="code-meta"><strong>Libraries:</strong> ${libs.map(escapeHtml).join(', ')}</p>` : ''}
+    ${code.setup ? `<p class="code-meta"><strong>Setup:</strong> ${escapeHtml(code.setup)}</p>` : ''}
+    ${files.length > 1 ? `<div class="code-toolbar"><button type="button" class="btn-sm" id="downloadCodeZipBtn">Download all files (.zip)</button></div>` : ''}
+    ${files.map((f, i) => `
+      <div class="code-block-wrap">
+        ${f.purpose ? `<p class="code-purpose">${escapeHtml(f.purpose)}</p>` : ''}
+        <div class="code-block-head">
+          <span>${escapeHtml(f.filename)} ${f.language ? '· ' + escapeHtml(f.language) : ''}</span>
+          <span class="head-actions">
+            <button type="button" class="copy-btn" data-copy="${i}">Copy</button>
+            <button type="button" class="copy-btn" data-download="${i}">Download</button>
+          </span>
+        </div>
+        <pre class="code-block">${escapeHtml(f.content)}</pre>
+      </div>`).join('')}
   `;
-  const copyBtn = panel.querySelector('.copy-btn');
-  copyBtn.addEventListener('click', () => {
-    const text = document.getElementById(blockId).textContent;
-    navigator.clipboard.writeText(text).then(() => {
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
-    }).catch(() => {
-      copyBtn.textContent = 'Failed';
-      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+
+  panel.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(files[Number(btn.dataset.copy)].content).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      }).catch(() => {
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
     });
   });
+  panel.querySelectorAll('[data-download]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = files[Number(btn.dataset.download)];
+      downloadBlob(f.content, f.filename.replace(/[\\/]/g, '_'), 'text/plain');
+    });
+  });
+  const zipBtn = document.getElementById('downloadCodeZipBtn');
+  if (zipBtn){
+    zipBtn.addEventListener('click', async () => {
+      if (typeof JSZip === 'undefined') return;
+      const zip = new JSZip();
+      files.forEach(f => zip.file(f.filename.replace(/^\/+/, ''), f.content));
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const title = (state.currentSpec?.project_title || 'makespec').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${title}_code.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  }
 }
 
 // ============================================================
@@ -1638,7 +1998,7 @@ els.exportBtn.addEventListener('click', () => {
   if (!state.currentSpec) return;
   
   const packageData = {
-    makespec_version: "2.0.0",
+    makespec_version: "2.1.0",
     form_inputs: {
       idea: els.idea.value,
       description: els.description.value,
