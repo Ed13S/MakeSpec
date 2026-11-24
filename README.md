@@ -52,3 +52,17 @@ For projects with electronics, the generated spec now includes:
 * **Code** (Code tab): a complete starter program with pins declared as named constants that match the circuit, plus optional extra files, required libraries and compile/upload steps. Copy or download each file, or grab everything as a `.zip`.
 
 Both come from the same model response, so ask for changes in the Request Changes box (e.g. "use MicroPython instead" or "move the LED to GPIO 5") and the circuit and code update together. The wiring is AI-generated, so check it against the datasheets before powering anything.
+
+---
+
+## 3D Models, Exploded View and Printable Parts
+
+The 3D layout tab was rebuilt for clarity and accuracy:
+
+* **Real shapes, not placeholder blocks.** Each part is built from several solids (box, rounded box, plate with holes, open tray, cylinder, cone, tube, sphere, hemisphere, torus), so a dev board shows its PCB, shield can, USB port and headers, and an enclosure shows its walls and screw holes. The prompt also gives the model a table of real-world sizes for common parts.
+* **Clear rendering.** Edge outlines, soft shadows, a light studio background and a grid whose squares are labelled in millimetres. Hover for dimensions, click a part (or its label or card) to isolate it.
+* **Proper exploded view.** Parts are spaced out along the axis they install on, with dashed guide lines and leader-line labels, like a technical exploded diagram. Use the Assembled/Exploded buttons or the Spacing slider. Older specs without explode data get an automatic spread along the assembly's longest axis.
+* **Printable vs visual-only.** Below the model, parts to print are listed separately from visual-only components (bought, owned or cut from stock). Each has a thumbnail and size. Only printable parts get STL downloads, exported Z-up and flat on the print bed, as single files, as one printable assembly, or as a zip.
+* **Better controls.** Orbit, pan (right-drag or Shift-drag), zoom, touch gestures, and Iso/Front/Side/Top view buttons.
+
+Saved specs from earlier versions still load.
