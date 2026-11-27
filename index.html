@@ -550,7 +550,9 @@
   /* ===== Circuit diagram ===== */
   .diagram-heading { font-family: var(--mono); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 12px; }
   .diagram-heading.spaced { margin-top: 32px; }
-  .circuit-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+  .circuit-toolbar { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .circuit-toolbar .btn-link { border-color: transparent; background: none; text-decoration: underline; color: var(--ink-soft); }
+  .wireframe-status { min-height: 1.3em; margin: 0 0 12px; font-size: 0.82rem; color: var(--ink-soft); font-family: var(--mono); }
   .circuit-wrap { border: 1px solid var(--ink-faint); border-radius: var(--radius); background: #FFFFFF; overflow-x: auto; padding: 8px; margin-bottom: 20px; }
   .circuit-wrap svg { display: block; width: 100%; min-width: 640px; height: auto; }
   .circuit-wrap .wire { transition: opacity 0.15s; }
@@ -1583,6 +1585,43 @@ function buildCircuitSVG(circuit){
   return { svg, wires, comps };
 }
 
+// ============================================================
+// WIREFRAME LINK
+// Sends the circuit to WireFrame (github.com/Ed13S/WireFrame) as plain
+// components + point-to-point connections. WireFrame matches the parts to
+// its own library, so only names, kinds and pin labels need to be right.
+// ============================================================
+const WIREFRAME_URL_KEY = 'makespec_wireframe_url';
+const WIREFRAME_DEFAULT_URL = 'https://ed13s.github.io/WireFrame/';
+
+function getWireframeUrl(){
+  try { return localStorage.getItem(WIREFRAME_URL_KEY) || WIREFRAME_DEFAULT_URL; } catch(e){ return WIREFRAME_DEFAULT_URL; }
+}
+
+function wireframeCircuit(circuit){
+  return {
+    format: 'makespec-circuit',
+    version: 1,
+    title: (state.currentSpec && state.currentSpec.project_title) || 'MakeSpec circuit',
+    explanation: circuit.explanation || '',
+    components: (circuit.components || []).filter(c => c && c.id).map(c => ({
+      id: String(c.id), name: String(c.name || c.id), kind: c.kind || 'other', pins: (Array.isArray(c.pins) ? c.pins : []).map(String)
+    })),
+    connections: (circuit.connections || []).filter(k => k && k.from_component && k.to_component && k.from_pin != null && k.to_pin != null).map(k => ({
+      net: String(k.net || ''), from_component: String(k.from_component), from_pin: String(k.from_pin),
+      to_component: String(k.to_component), to_pin: String(k.to_pin), notes: String(k.notes || '')
+    }))
+  };
+}
+
+function wireframeLink(circuit){
+  const bytes = new TextEncoder().encode(JSON.stringify(wireframeCircuit(circuit)));
+  let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  const b64 = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return getWireframeUrl().replace(/#.*$/, '') + '#makespec=' + b64;
+}
+
 let currentCircuitSVG = '';
 
 function renderDiagrams(parts, circuit){
@@ -1603,7 +1642,13 @@ function renderDiagrams(parts, circuit){
     html += `
       <h3 class="diagram-heading">Wiring diagram</h3>
       ${circuit.explanation ? `<p class="code-explanation">${escapeHtml(circuit.explanation)}</p>` : ''}
-      <div class="circuit-toolbar"><button type="button" class="btn-sm" id="downloadCircuitBtn">Download circuit (.svg)</button></div>
+      <div class="circuit-toolbar">
+        <button type="button" class="btn-sm" id="openWireframeBtn">Open in WireFrame</button>
+        <button type="button" class="btn-sm" id="copyWireframeBtn">Copy for WireFrame</button>
+        <button type="button" class="btn-sm" id="downloadCircuitBtn">Download circuit (.svg)</button>
+        <button type="button" class="btn-sm btn-link" id="wireframeUrlBtn" title="Change where Open in WireFrame goes">WireFrame address</button>
+      </div>
+      <p class="wireframe-status" id="wireframeStatus" role="status"></p>
       <div class="circuit-wrap" id="circuitWrap">${built.svg}</div>
       <table class="wire-table"><thead><tr><th>Net</th><th>From</th><th>To</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="diagram-note">AI-generated wiring. Check every connection against the datasheets — especially voltage levels (3.3V vs 5V), polarity, and current limits — before you power anything up.</p>`;
@@ -1633,6 +1678,28 @@ function renderDiagrams(parts, circuit){
         wrap.classList.remove('focus');
         wrap.querySelectorAll('.wire.hot').forEach(g => g.classList.remove('hot'));
       });
+    });
+    const status = document.getElementById('wireframeStatus');
+    const say = msg => { status.textContent = msg; };
+    document.getElementById('openWireframeBtn').addEventListener('click', () => {
+      const url = wireframeLink(circuit);
+      if (url.length > 190000){ say('This circuit is too big for a link. Use "Copy for WireFrame" and paste it into WireFrame\'s AI Assistant.'); return; }
+      const w = window.open(url, 'wireframe');
+      say(w ? 'Opened in WireFrame as a new project.' : 'Your browser blocked the new tab. Allow pop-ups for this page, or use "Copy for WireFrame".');
+    });
+    document.getElementById('copyWireframeBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(wireframeCircuit(circuit), null, 2));
+        say('Copied. In WireFrame open AI Assistant > Make a circuit, paste it into the reply box and press Build.');
+      } catch(e){ say('Could not copy to the clipboard. Try "Open in WireFrame" instead.'); }
+    });
+    document.getElementById('wireframeUrlBtn').addEventListener('click', () => {
+      const next = window.prompt('Where is your WireFrame app?', getWireframeUrl());
+      if (next === null) return;
+      const clean = next.trim().replace(/#.*$/, '');
+      if (!/^https?:\/\//i.test(clean)){ say('That address must start with http:// or https://'); return; }
+      try { localStorage.setItem(WIREFRAME_URL_KEY, clean); } catch(e){}
+      say('WireFrame address saved.');
     });
     document.getElementById('downloadCircuitBtn').addEventListener('click', () => {
       const title = (state.currentSpec?.project_title || 'circuit').toLowerCase().replace(/[^a-z0-9]+/g, '_');
