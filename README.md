@@ -66,3 +66,15 @@ The 3D layout tab was rebuilt for clarity and accuracy:
 * **Better controls.** Orbit, pan (right-drag or Shift-drag), zoom, touch gestures, and Iso/Front/Side/Top view buttons.
 
 Saved specs from earlier versions still load.
+
+---
+
+## Send circuits to WireFrame
+
+The Circuit & pinouts tab has buttons for [Ed13S/WireFrame](https://github.com/Ed13S/WireFrame), a schematic editor:
+
+* **Open in WireFrame** opens WireFrame in a new tab and imports the circuit as a new project (real parts, pins matched by name or number, unused pins marked no-connect, checks run).
+* **Copy for WireFrame** copies the circuit as JSON, to paste into WireFrame's AI Assistant (Make a circuit, reply box).
+* **WireFrame address** changes where "Open" points (default `https://ed13s.github.io/WireFrame/`).
+
+The importer lives in WireFrame (`makespec.js`), so that needs to be deployed too.
