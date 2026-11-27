@@ -73,6 +73,7 @@ Saved specs from earlier versions still load.
 
 The Circuit & pinouts tab has buttons for [Ed13S/WireFrame](https://github.com/Ed13S/WireFrame), a schematic editor:
 
+* **WireFrame schematic** (default view) shows the circuit as a real WireFrame schematic right inside the tab; **Simple wiring** switches back to the quick diagram.
 * **Open in WireFrame** opens WireFrame in a new tab and imports the circuit as a new project (real parts, pins matched by name or number, unused pins marked no-connect, checks run).
 * **Copy for WireFrame** copies the circuit as JSON, to paste into WireFrame's AI Assistant (Make a circuit, reply box).
 * **WireFrame address** changes where "Open" points (default `https://ed13s.github.io/WireFrame/`).

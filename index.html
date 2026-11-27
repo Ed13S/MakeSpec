@@ -552,6 +552,10 @@
   .diagram-heading.spaced { margin-top: 32px; }
   .circuit-toolbar { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
   .circuit-toolbar .btn-link { border-color: transparent; background: none; text-decoration: underline; color: var(--ink-soft); }
+  .circuit-views { display: flex; gap: 6px; margin: 10px 0; }
+  .circuit-views .view-on { background: var(--ink); color: var(--paper, #fff); }
+  .wf-embed iframe { width: 100%; height: min(70vh, 560px); border: 1px solid var(--line, #ccc); border-radius: 8px; background: #fff; display: block; margin-bottom: 6px; }
+  .wf-embed[hidden], .circuit-wrap[hidden] { display: none; }
   .wireframe-status { min-height: 1.3em; margin: 0 0 12px; font-size: 0.82rem; color: var(--ink-soft); font-family: var(--mono); }
   .circuit-wrap { border: 1px solid var(--ink-faint); border-radius: var(--radius); background: #FFFFFF; overflow-x: auto; padding: 8px; margin-bottom: 20px; }
   .circuit-wrap svg { display: block; width: 100%; min-width: 640px; height: auto; }
@@ -1649,7 +1653,13 @@ function renderDiagrams(parts, circuit){
         <button type="button" class="btn-sm btn-link" id="wireframeUrlBtn" title="Change where Open in WireFrame goes">WireFrame address</button>
       </div>
       <p class="wireframe-status" id="wireframeStatus" role="status"></p>
-      <div class="circuit-wrap" id="circuitWrap">${built.svg}</div>
+      <div class="circuit-views" role="group" aria-label="Diagram style">
+        <button type="button" class="btn-sm view-on" id="viewSchematicBtn">WireFrame schematic</button>
+        <button type="button" class="btn-sm" id="viewSimpleBtn">Simple wiring</button>
+      </div>
+      <div class="wf-embed" id="wfEmbed"><iframe id="wfFrame" title="WireFrame schematic" loading="lazy"></iframe>
+        <p class="wireframe-status">Drag, zoom and edit it right here, or use "Open in WireFrame" for the full editor. If this stays blank, check the WireFrame address or switch to Simple wiring.</p></div>
+      <div class="circuit-wrap" id="circuitWrap" hidden>${built.svg}</div>
       <table class="wire-table"><thead><tr><th>Net</th><th>From</th><th>To</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="diagram-note">AI-generated wiring. Check every connection against the datasheets — especially voltage levels (3.3V vs 5V), polarity, and current limits — before you power anything up.</p>`;
   } else {
@@ -1679,6 +1689,21 @@ function renderDiagrams(parts, circuit){
         wrap.querySelectorAll('.wire.hot').forEach(g => g.classList.remove('hot'));
       });
     });
+    const wfFrame = document.getElementById('wfFrame');
+    const showView = schematic => {
+      document.getElementById('wfEmbed').hidden = !schematic;
+      wrap.hidden = schematic;
+      document.getElementById('viewSchematicBtn').classList.toggle('view-on', schematic);
+      document.getElementById('viewSimpleBtn').classList.toggle('view-on', !schematic);
+      if (schematic && !wfFrame.dataset.loaded){
+        wfFrame.dataset.loaded = '1';
+        const link = wireframeLink(circuit);
+        wfFrame.src = link.length > 190000 ? 'about:blank' : link.replace('#makespec=', '?embed=1#makespec=');
+      }
+    };
+    document.getElementById('viewSchematicBtn').addEventListener('click', () => showView(true));
+    document.getElementById('viewSimpleBtn').addEventListener('click', () => showView(false));
+    showView(true);
     const status = document.getElementById('wireframeStatus');
     const say = msg => { status.textContent = msg; };
     document.getElementById('openWireframeBtn').addEventListener('click', () => {
